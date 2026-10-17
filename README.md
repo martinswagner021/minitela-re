@@ -106,6 +106,12 @@ ls -l /dev/ttyACM0
 Only **one** process may own the serial port. The daemon owns it; everything
 else talks to the daemon over a UNIX socket.
 
+The daemon mirrors desktop notifications on `org.freedesktop.Notifications`
+that match a configurable list of substrings (default `whatsapp,whatsie`, so
+both the WhatsApp PWA and the **Whatsie** client are covered). Adjust it with
+`--notify-match` or the `MINITELA_NOTIFY_MATCH` environment variable; pass an
+empty value to mirror every notification.
+
 ## Run
 
 ```bash

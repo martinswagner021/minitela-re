@@ -72,3 +72,19 @@ by `read_str 1083`. This is cosmetic.
 
 The tray needs a running AppIndicator host (most desktops have one). It prints
 a libayatana deprecation warning, which is harmless.
+
+## WhatsApp / Whatsie messages are not mirrored
+
+Mirroring relies on desktop notifications. Check, in order:
+
+1. **The source is recognised.** The daemon matches a comma-separated list
+   (`--notify-match`, default `whatsapp,whatsie`) against the notification's
+   app name, icon and summary. A different client may use another name — set
+   `MINITELA_NOTIFY_MATCH` (e.g. `whatsapp,whatsie,signal`) and restart the
+   daemon. To mirror *everything*, pass `--notify-match ""`.
+2. **Notifications are actually emitted.** Many clients only post for messages
+   while the window is in the background. Confirm something arrives with
+   `dbus-monitor "interface='org.freedesktop.Notifications'"` while a test
+   message is sent.
+3. **The daemon sees it.** Run the daemon with `-v`; a matched notification is
+   logged as `notification from '<summary>' ('<app>'): '<body>'`.

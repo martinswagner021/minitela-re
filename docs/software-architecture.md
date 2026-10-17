@@ -62,6 +62,7 @@ Threads:
 |---|---|
 | status sync loop | every `--interval` (default 5 s) reads host state and writes only **changed** registers; also pushes the clock |
 | notification loop | runs `dbus-monitor` for `org.freedesktop.Notifications` and mirrors matching notifications |
+| notification worker | drains a queue and performs the (slower) serial writes, so device I/O never blocks the reader |
 | socket server | accepts newline-delimited JSON requests, one thread per connection |
 
 Key options:
@@ -71,12 +72,33 @@ Key options:
 | `--port` | first `/dev/ttyACM*` | serial port |
 | `--interval` | `5.0` | status sync period (seconds) |
 | `--socket` | `$XDG_RUNTIME_DIR/minitela.sock` | control socket path |
-| `--notify-match` | env `MINITELA_NOTIFY_MATCH` or `whatsapp` | substring filter for mirrored notifications |
+| `--notify-match` | env `MINITELA_NOTIFY_MATCH` or `whatsapp,whatsie` | comma-separated substrings matched against a notification's app name / icon / summary (empty = mirror all) |
 | `--no-notifications` | off | disable D-Bus mirroring |
 | `-v` / `--verbose` | off | debug logging |
 
 `pause`/`resume` stop and restart the periodic sync without releasing the port
 (useful when another tool needs a quiet link, or to freeze the display).
+
+### Notification mirroring
+
+Mirroring follows desktop notifications on `org.freedesktop.Notifications`
+(as sent by the WhatsApp PWA, **Whatsie**, and similar clients). Details that
+matter:
+
+* `dbus-monitor` is launched with `stdbuf -oL` so its stdout is line-buffered;
+  otherwise the OS block-buffers the pipe and notifications arrive in delayed
+  bursts.
+* The parser finalises a notification as soon as the **four** leading strings
+  of the `Notify` call (`app_name`, `app_icon`, `summary`, `body`) are seen,
+  rather than waiting for the *next* bus message — which could otherwise delay
+  mirroring by seconds.
+* A notification is mirrored if **any** of the comma-separated `--notify-match`
+  terms appears in `app_name + app_icon + summary`. The default
+  (`whatsapp,whatsie`) covers both the Chromium WhatsApp PWA (`app_name`
+  `"WhatsApp"`) and the Whatsie Flatpak (`app_name` `"Whatsie"`, `app_icon`
+  `com.ktechpit.whatsie`).
+* Accepted notifications are queued to a dedicated worker thread that performs
+  the serial writes, so a slow write never blocks the reader.
 
 ### Control socket protocol
 

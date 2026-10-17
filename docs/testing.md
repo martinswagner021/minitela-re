@@ -71,3 +71,26 @@ All Python modules compile clean (`python3 -m py_compile`). The tray runs
 * The flash download/upload path (`REQUEST_DOWNLOAD`/`DOWNLOAD_DATA`/
   `DOWNLOAD_COMPLETE`) — documented, not exercised.
 * ACF/GIF generation and upload.
+
+## 8. Notification mirroring (D-Bus) — 2026-10-17
+
+Verified with the live desktop bus (notification daemon: quickshell):
+
+| Check | Result |
+|---|---|
+| Whatsie (`app_name="Whatsie"`, `app_icon=com.ktechpit.whatsie`) matched | yes |
+| WhatsApp PWA (`app_name="WhatsApp"`) matched | yes |
+| Unrelated source (e.g. `Signal`) ignored | yes |
+| Delivery latency, isolated message | ~55 ms |
+| Delivery latency, back-to-back messages | ~55 ms each (after decoupling) |
+| Registers written | `1140` sender, `1141` body, triggers, page → 1 |
+
+Fixes made (both were real defects):
+
+* **Filter** defaulted to the literal `whatsapp`, so Whatsie was ignored; it is
+  now a comma-separated list defaulting to `whatsapp,whatsie`.
+* **Parser** only finalised a notification when the *next* bus message arrived
+  (delays of ~8 s); it now finalises as soon as the four leading strings are
+  read, and `dbus-monitor` is launched with `stdbuf -oL` for line buffering.
+* Device writes were performed inline on the reader thread, delaying the next
+  message; they now go through a queue + worker thread.

@@ -27,7 +27,9 @@ import argparse
 import json
 import logging
 import os
+import queue
 import re
+import shutil
 import signal
 import socket
 import subprocess
@@ -46,6 +48,18 @@ from minitela_client import default_socket_path
 log = logging.getLogger("minitela.daemon")
 
 MONITOR_CMD = ["dbus-monitor", "interface='org.freedesktop.Notifications'"]
+
+
+def _monitor_command() -> list[str]:
+    """Return the dbus-monitor invocation with line-buffered stdout.
+
+    When dbus-monitor's stdout is a pipe it is block-buffered, so notifications
+    would reach the parser in delayed bursts (seconds late). ``stdbuf -oL``
+    forces line buffering so each Notify call is seen immediately.
+    """
+    if shutil.which("stdbuf"):
+        return ["stdbuf", "-oL", *MONITOR_CMD]
+    return list(MONITOR_CMD)
 NOTIFY_HEADER = re.compile(r"member=Notify\b")
 NOTIFY_IFACE = "org.freedesktop.Notifications"
 STRING_RE = re.compile(r'^\s+string "(.*)"\s*$')
@@ -103,10 +117,16 @@ class Daemon:
         self.session = DeviceSession(port)
         self.interval = interval
         self.socket_path = socket_path
-        self.notify_match = notify_match.lower()
+        # Comma-separated substrings; a notification is mirrored if ANY term
+        # appears in app_name/app_icon/summary. Defaults cover both the
+        # Chromium WhatsApp PWA ("WhatsApp") and the Whatsie client ("Whatsie").
+        self.notify_terms = [t.strip().lower() for t in notify_match.split(",") if t.strip()]
         self.monitor_notifications = monitor_notifications
         self._stop = threading.Event()
         self._last_status: dict = {}
+        # Notifications are queued and written to the device by a dedicated
+        # worker so a slow serial write never blocks the D-Bus reader thread.
+        self._notify_q: "queue.Queue[tuple[str, str]]" = queue.Queue()
 
     # -- status loop -------------------------------------------------------
 
@@ -129,7 +149,7 @@ class Daemon:
             proc = None
             try:
                 proc = subprocess.Popen(
-                    MONITOR_CMD, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                    _monitor_command(), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                     text=True, bufsize=1,
                 )
                 log.info("monitoring notifications via dbus-monitor")
@@ -163,6 +183,14 @@ class Daemon:
                     m = STRING_RE.match(line)
                     if m:
                         strings.append(_unescape(m.group(1)))
+                        # The Notify signature is fixed, so the first four
+                        # strings are always app_name, app_icon, summary, body.
+                        # Finalise as soon as they are captured instead of
+                        # waiting for the *next* bus message to close the block
+                        # (which can delay mirroring by several seconds).
+                        if len(strings) >= 4:
+                            collecting = False
+                            self._handle_notification(strings)
                     continue
                 # end of this message
                 collecting = False
@@ -176,13 +204,22 @@ class Daemon:
             return
         app_name, app_icon, summary, body = strings[0], strings[1], strings[2], strings[3]
         haystack = f"{app_name} {app_icon} {summary}".lower()
-        if self.notify_match and self.notify_match not in haystack:
+        if self.notify_terms and not any(t in haystack for t in self.notify_terms):
             return
-        log.info("notification from %r: %r", summary, body)
-        try:
-            self.session.call(lambda d: d.send_whatsapp_notification(summary or app_name, body))
-        except Exception as exc:
-            log.warning("failed to mirror notification: %s", exc)
+        log.info("notification from %r (%r): %r", summary, app_name, body)
+        self._notify_q.put((summary or app_name, body))
+
+    def _notification_worker(self) -> None:
+        while not self._stop.is_set():
+            try:
+                title, body = self._notify_q.get(timeout=0.5)
+            except queue.Empty:
+                continue
+            try:
+                self.session.call(
+                    lambda d, t=title, b=body: d.send_whatsapp_notification(t, b))
+            except Exception as exc:
+                log.warning("failed to mirror notification: %s", exc)
 
     # -- control socket ----------------------------------------------------
 
@@ -284,6 +321,7 @@ class Daemon:
         threads = [threading.Thread(target=self._status_loop, daemon=True)]
         if self.monitor_notifications:
             threads.append(threading.Thread(target=self._notification_loop, daemon=True))
+            threads.append(threading.Thread(target=self._notification_worker, daemon=True))
         for t in threads:
             t.start()
         threading.Thread(target=self._serve, args=(server,), daemon=True).start()
@@ -314,8 +352,9 @@ def main(argv=None) -> int:
     parser.add_argument("--port", help="Serial port (default: first /dev/ttyACM*)")
     parser.add_argument("--interval", type=float, default=5.0, help="Status sync interval seconds")
     parser.add_argument("--socket", default=default_socket_path(), help="Control socket path")
-    parser.add_argument("--notify-match", default=os.environ.get("MINITELA_NOTIFY_MATCH", "whatsapp"),
-                        help="Substring to match notifications (empty = all)")
+    parser.add_argument("--notify-match", default=os.environ.get("MINITELA_NOTIFY_MATCH", "whatsapp,whatsie"),
+                        help="Comma-separated substrings to match notifications against "
+                             "app_name/app_icon/summary (empty = mirror all)")
     parser.add_argument("--no-notifications", action="store_true", help="Disable D-Bus notification mirroring")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args(argv)

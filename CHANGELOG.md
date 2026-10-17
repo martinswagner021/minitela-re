@@ -30,6 +30,14 @@
 * Page numbering is 1-based.
 * Battery icon bucket clamped to the four available textures (`0..3`).
 * Battery percent text now includes the unit glyph (`"80%"`).
+* Notification mirroring now recognises **Whatsie** as well as the WhatsApp
+  PWA (the filter was the literal `whatsapp`; it is now a comma-separated list
+  defaulting to `whatsapp,whatsie`).
+* Notification parser no longer waits for the next D-Bus message to finish a
+  notification (this caused multi-second delays); it finalises as soon as the
+  four leading strings are read, and `dbus-monitor` runs line-buffered.
+* Notification device writes run on a worker thread, so they never block the
+  D-Bus reader.
 
 ### Known limitations
 * Flash write (`REQUEST_DOWNLOAD`/`DOWNLOAD_DATA`/`DOWNLOAD_COMPLETE`) and ACF

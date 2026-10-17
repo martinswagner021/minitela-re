@@ -8,8 +8,9 @@ Type=simple
 ExecStart=/usr/bin/python3 %h/Work/minitela-re/minitela_daemon.py
 Restart=on-failure
 RestartSec=3
-# Adjust the match if you want to mirror more than WhatsApp:
-# Environment=MINITELA_NOTIFY_MATCH=whatsapp
+# Comma-separated substrings matched against the notification's app name,
+# icon and summary. Default mirrors both the WhatsApp PWA and Whatsie.
+# Environment=MINITELA_NOTIFY_MATCH=whatsapp,whatsie
 
 [Install]
 WantedBy=default.target
