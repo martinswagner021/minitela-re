@@ -70,5 +70,16 @@ by `read_str 1083`. This is cosmetic.
 
 ## Tray does not appear
 
-The tray needs a running AppIndicator host (most desktops have one). It prints
-a libayatana deprecation warning, which is harmless.
+The tray needs a StatusNotifier host (most desktops have one). It prints a
+libayatana deprecation warning, which is harmless.
+
+On **Omarchy** (Quickshell), the tray is present but **only pinned items are
+shown directly**; other items sit in the tray drawer behind the chevron. Pin
+the item so it stays visible:
+
+* Right-click the tray chevron and pin **Minitela**, or
+* add `"pinned": ["minitela"]` to the `omarchy.tray` entry in
+  `~/.config/omarchy/shell.json` (see the README). It hot-reloads.
+
+Also make sure the tray process is actually running (`python3
+minitela_tray.py`, or the `minitela-tray.service` user unit).
