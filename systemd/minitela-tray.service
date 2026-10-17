@@ -1,0 +1,15 @@
+[Unit]
+Description=Minitela mini-display tray controller
+Documentation=file:%h/Work/minitela-re/docs/findings.md
+After=graphical-session.target minitela-daemon.service
+PartOf=graphical-session.target
+Requisite=minitela-daemon.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/Work/minitela-re/minitela_tray.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target
