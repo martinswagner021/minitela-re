@@ -1,0 +1,15 @@
+[Unit]
+Description=Minitela mini-display background daemon
+Documentation=file:%h/Work/minitela-re/docs/findings.md
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/Work/minitela-re/minitela_daemon.py
+Restart=on-failure
+RestartSec=3
+# Adjust the match if you want to mirror more than WhatsApp:
+# Environment=MINITELA_NOTIFY_MATCH=whatsapp
+
+[Install]
+WantedBy=default.target

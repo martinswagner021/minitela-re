@@ -1,0 +1,13 @@
+# Minitela secondary mini display (GalaxyCore GC9002 / "AHMI")
+# USB CDC ACM bridge: CherryUSB "sxw-admin CDC DEMO" (idVendor:idProduct = 0324:0324)
+#
+# Grants the locally logged-in seat user access (uaccess ACL) and, as a
+# belt-and-braces fallback for non-seat setups, makes the node world-accessible.
+#
+# Install:
+#   sudo cp 99-minitela.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules
+#   sudo udevadm trigger --subsystem-match=tty
+# Then replug the display (or reboot) and verify: ls -l /dev/ttyACM0
+
+SUBSYSTEM=="tty", ATTRS{idVendor}=="0324", ATTRS{idProduct}=="0324", MODE="0666", TAG+="uaccess"
