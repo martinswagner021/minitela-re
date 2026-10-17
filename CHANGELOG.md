@@ -30,6 +30,10 @@
 * Page numbering is 1-based.
 * Battery icon bucket clamped to the four available textures (`0..3`).
 * Battery percent text now includes the unit glyph (`"80%"`).
+* Documented that the tray/web UI do **nothing** unless the daemon is running
+  (they talk to it over the socket; the panel keeps its last frame, so it can
+  look connected). Added a troubleshooting entry and pointed users at the
+  systemd user services so the daemon/tray survive logouts.
 
 ### Known limitations
 * Flash write (`REQUEST_DOWNLOAD`/`DOWNLOAD_DATA`/`DOWNLOAD_COMPLETE`) and ACF

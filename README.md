@@ -208,6 +208,9 @@ systemctl --user daemon-reload
 systemctl --user enable --now minitela-daemon.service minitela-tray.service
 ```
 
+> The bundled units call `%h/Work/minitela-re/…`; if you cloned the repository
+> somewhere else, edit `ExecStart`/`Documentation` in the unit files first.
+
 Optionally keep the daemon running across logins:
 
 ```bash
