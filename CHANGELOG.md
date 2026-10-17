@@ -30,6 +30,10 @@
 * Page numbering is 1-based.
 * Battery icon bucket clamped to the four available textures (`0..3`).
 * Battery percent text now includes the unit glyph (`"80%"`).
+* Tray icon no longer depends on a vendor asset: the project ships its own
+  `assets/minitela.png` (with a `video-display` fallback), and `tools/
+  make_icon.py` regenerates it. Documented how to pin the item so Omarchy's
+  Quickshell bar shows it directly rather than in the tray drawer.
 
 ### Known limitations
 * Flash write (`REQUEST_DOWNLOAD`/`DOWNLOAD_DATA`/`DOWNLOAD_COMPLETE`) and ACF
