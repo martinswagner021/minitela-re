@@ -1,0 +1,27 @@
+# ---- Python -------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ---- Local / scratch ----------------------------------------------------
+*.log
+*.sock
+
+# ---- Reverse-engineering inputs: NOT PART OF THIS PROJECT ---------------
+# These directories hold the *vendor's* closed-source artifacts that were
+# inspected during the reverse-engineering work:
+#
+#   extracted/       the shipped Electron ASAR, its extracted JS, package.json
+#   src/             the vendor's JavaScript modules extracted from that ASAR
+#   minitela-backup/ the packaged UI bundle (data.json, resources, Texture.acf,
+#                    file.zip, icons, backgrounds, the Windows ACF inputs, ...)
+#
+# They are deliberately NOT committed: this repository ships only original
+# code and original documentation, and never redistributes vendor material.
+# The documentation references those files by name so that a reader who has
+# their own copy of the vendor package can reproduce the analysis.
+extracted/
+minitela-backup/
+src/
