@@ -12,6 +12,34 @@ sudo udevadm trigger --subsystem-match=tty
 ls -l /dev/ttyACM0        # should now show rw for your user
 ```
 
+## Nothing the tray/web UI does has any effect (brightness, pages, …)
+
+Almost always: **the daemon is not running.** The tray and web UI do *not* own
+the serial port — they send every action to the daemon over a UNIX socket. If
+the daemon is down, `minitela_client` fails with `FileNotFoundError` on the
+socket and all controls silently do nothing (the panel keeps showing its last
+frame, so it looks "connected").
+
+The daemon was only ever run by hand in this project, so it dies when
+started manually and never survives a logout. Install it as a user service:
+
+```bash
+systemctl --user status minitela-daemon.service   # is it active?
+systemctl --user enable --now minitela-daemon.service
+systemctl --user status minitela-tray.service     # and the tray
+systemctl --user enable --now minitela-tray.service
+```
+
+Verify the daemon really owns the port and answers:
+
+```bash
+ls -l "$XDG_RUNTIME_DIR/minitela.sock"            # should exist
+python3 minitela_client.py ping                   # {"ok": true, ...}
+```
+
+Brightness is register `7` (`背光` / Backlight, `0..100`); confirm a write is
+accepted by reading it back: `python3 minitela_client.py read reg=7`.
+
 ## "The port is busy" / CLI does nothing while the daemon runs
 
 Only one process can own the serial port. If the daemon is running, use the

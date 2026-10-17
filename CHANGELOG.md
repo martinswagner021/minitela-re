@@ -38,6 +38,10 @@
   four leading strings are read, and `dbus-monitor` runs line-buffered.
 * Notification device writes run on a worker thread, so they never block the
   D-Bus reader.
+* Documented that the tray/web UI do **nothing** unless the daemon is running
+  (they talk to it over the socket; the panel keeps its last frame, so it can
+  look connected). Added a troubleshooting entry and pointed users at the
+  systemd user services so the daemon/tray survive logouts.
 * Tray icon no longer depends on a vendor asset: the project ships its own
   `assets/minitela.png` (with a `video-display` fallback), and `tools/
   make_icon.py` regenerates it. Documented how to pin the item so Omarchy's
