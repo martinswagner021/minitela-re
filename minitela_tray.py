@@ -30,8 +30,23 @@ from minitela_client import MinitelaClient  # noqa: E402
 from minitela import PAGE_NAMES  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ICON = os.path.join(HERE, "minitela-backup", "minitela", "resources", "minitelaIcon.png")
 WEB_UI = os.path.join(HERE, "web_ui.py")
+
+
+def _resolve_icon() -> str:
+    """Return the tray icon: our own asset, else a stock theme icon name.
+
+    The project ships its own icon (``assets/minitela.png``). If it is missing
+    we fall back to a freedesktop icon name so the tray item is never left
+    without an icon (the vendor artwork is intentionally not shipped).
+    """
+    candidate = os.path.join(HERE, "assets", "minitela.png")
+    if os.path.exists(candidate):
+        return candidate
+    return "video-display"
+
+
+ICON = _resolve_icon()
 
 
 class TrayApp:

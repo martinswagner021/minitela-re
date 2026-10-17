@@ -38,6 +38,10 @@
   four leading strings are read, and `dbus-monitor` runs line-buffered.
 * Notification device writes run on a worker thread, so they never block the
   D-Bus reader.
+* Tray icon no longer depends on a vendor asset: the project ships its own
+  `assets/minitela.png` (with a `video-display` fallback), and `tools/
+  make_icon.py` regenerates it. Documented how to pin the item so Omarchy's
+  Quickshell bar shows it directly rather than in the tray drawer.
 
 ### Known limitations
 * Flash write (`REQUEST_DOWNLOAD`/`DOWNLOAD_DATA`/`DOWNLOAD_COMPLETE`) and ACF
